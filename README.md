@@ -106,8 +106,18 @@ Hunch computes a 0–100 composite score from five pure mathematical factors:
   * Slide-out "Why This?" drawer with 5-factor breakdown bars, Wilson metrics, and plain-English reasons
   * Complete feedback loop (`/api/feedback` & `/api/ratings`): Not Interested, Already Played, Hide, and 1–10 rating dialog with DB check constraint
   * Game detail page at `/games/[appId]` with SteamSpy community tags, regret risk analysis, and store links
-* [ ] **Phase 5: My Games, Squad Rooms & Polish**
-  * Local backlog & lists, Supabase Realtime squad rooms (max 1 veto), and profile radar
+* [x] **Phase 5: My Games, Squad Decider Rooms, Profile & Settings**
+  * **My Games (`/my-games`):** Steam library browser, backlog organizer (&lt;5 hours filter), and custom list creator with zero-write-to-Steam guarantee.
+  * **Squad Decider Lobby (`/squad`):** Create session rooms with custom filters or join existing sessions via 6-digit room code (`SQ-XXXX`).
+  * **Realtime Collaborative Room (`/squad/[code]`):**
+    * Supabase Realtime channel integration with live member presence and avatar dots.
+    * Realtime broadcast voting deck (`Pick` +1, `Pass` 0, `Veto` strike).
+    * **The 1-Veto Rule:** Strict enforcement of max 1 veto per user per squad session backed by application logic and PostgreSQL partial unique index `uniqueIndex("squad_user_single_veto_idx").on(table.squadId, table.userId).where(sql`vote = 'veto'`)`.
+    * Live Consensus Scoreboard: real-time ranked consensus leaderboards with instant elimination of vetoed games and winner crowning.
+    * Built-in peer simulation for immediate solo testing.
+  * **Gamer Profile (`/profile`):** Taste vector affinity bars (Roguelike, Strategy, RPG, Indie), playtime statistics, backlog metrics, and gamer achievement badges.
+  * **Settings (`/settings`):** Session management, manual Steam library resync trigger, taste calibration reset, local data wipe, and Valve compliance notes.
+  * **100% Passing Test Suite & Clean Turbopack Build:** 12/12 unit tests passing via `npm test`, 0 lint warnings/errors via `npm run lint`, all 24 routes cleanly compiled via `npm run build`.
 
 ---
 

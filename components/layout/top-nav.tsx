@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles, Compass, Library, Users, Search, LogOut, ShieldCheck } from "lucide-react";
+import { Sparkles, Compass, Library, Users, Search, LogOut, ShieldCheck, Settings } from "lucide-react";
 
 interface TopNavProps {
   user?: {
@@ -99,6 +99,14 @@ export function TopNav({ user }: TopNavProps) {
                   <span className="hidden sm:inline text-xs font-medium text-ink max-w-[120px] truncate">
                     {user.displayName}
                   </span>
+                </Link>
+
+                <Link
+                  href="/settings"
+                  title="Settings"
+                  className="p-1.5 rounded-md text-muted hover:text-ink hover:bg-section transition-colors"
+                >
+                  <Settings className="h-4 w-4" />
                 </Link>
 
                 <a
