@@ -93,8 +93,12 @@ Hunch computes a 0–100 composite score from five pure mathematical factors:
   * Steam Web API library sync (`lib/steam/client.ts`) for user owned games & playtimes
   * Inngest functions: `seed-catalog` (2–5k games enrichment), `sync-steam-library`, `daily-resync-cron`
   * Curated 50+ rich game fixtures (`lib/sample-data/sample-games.ts`) & database seeder (`lib/sample-data/seeder.ts`)
-* [ ] **Phase 3: Onboarding, Pure Ranking Engine & Taste Profile**
-  * `/start` onboarding flow, Wilson score unit tests, and pgvector HNSW indexing
+* [x] **Phase 3: Onboarding, Pure Ranking Engine & Taste Profile**
+  * Interactive onboarding questionnaire at `/start` (mechanics, hours target, budget)
+  * Pure ranking engine in `lib/ranking/`: Taste (0.40), Wilson review lower bound (0.20), Inverted regret risk (0.15), Time fit (0.15), Price/sale (0.10)
+  * Explainable score breakdown & "Why this?" rationale generator (`lib/ranking/explainer.ts`)
+  * Sparse tag-weight vector synthesis, L2 normalization, and 128D projection for pgvector (`lib/ranking/taste-vector.ts`)
+  * Unit test suite with 12/12 passing tests (`npm test`) across Wilson formula, pure ranking, and vectors
 * [ ] **Phase 4: Core Recommendation Experience**
   * `/for-you`, `/discover`, game details, and "Why this?" inspection drawer
 * [ ] **Phase 5: My Games, Squad Rooms & Polish**
