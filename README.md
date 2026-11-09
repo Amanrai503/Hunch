@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hunch 🎯
+
+> **Steam recommendations, explained.**  
+> Never buy another game you abandon after 90 minutes. Transparent picks calculated from your actual playtime, tags, and regret risk.
+
+---
+
+## Tech Stack
+
+* **Framework:** Next.js (App Router) + TypeScript + React 19
+* **Styling:** Tailwind CSS v4 + Radix UI / custom editorial components (No dark mode)
+* **Typography:** `Bricolage Grotesque` (headings) & `DM Sans` (body) via `next/font`
+* **Design Tokens:**
+  * Background: `#F4EFE6`
+  * Surface: `#FBF8F2`
+  * Section: `#ECE5D7`
+  * Line: `#D8D0C0`
+  * Ink: `#1B1B1F`
+  * Muted: `#5C5A55`
+  * Accent: `#C8321A`
+* **Database & ORM:** PostgreSQL with `pgvector` extension via Drizzle ORM
+* **Background Jobs:** Inngest (throttled catalog enrichment ~200 req/5 min, library sync, daily cron)
+* **Realtime Multiplayer:** Supabase Realtime (collaborative Squad voting rooms)
+* **Auth:** Steam OpenID 2.0 (read-only 64-bit SteamID, nonce replay protection, `httpOnly` signed cookie session) + One-click Sample Profile Mode
+* **Ranking Engine:** Pure, decoupled mathematical module (Taste 0.40, Wilson Review 0.20, Inverted Regret 0.15, Time Fit 0.15, Price 0.10)
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### 1. Prerequisites
+* Node.js 20+
+* Docker & Docker Compose (for local PostgreSQL with `pgvector`)
 
+### 2. Setup Environment Variables
+Copy `.env.example` to `.env.local`:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Variable | Description | Default / Example |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_APP_URL` | Base URL of the application | `http://localhost:3000` |
+| `SESSION_SECRET` | 32+ char secret for JWT cookie encryption | `development_secret_must_be_at_least_32_bytes_long_hunch` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:password@localhost:5432/hunch` |
+| `STEAM_API_KEY` | Steam Web API Key ([Get one here](https://steamcommunity.com/dev/apikey)) | `your_key_here` |
+| `INNGEST_EVENT_KEY` | Inngest event key for background jobs | `local` |
+| `INNGEST_SIGNING_KEY` | Inngest signing key | `local` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL (Squad rooms) | `https://your-project.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`| Supabase Anonymous Public Key | `your-anon-key` |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Start PostgreSQL with pgvector
+```bash
+docker compose up -d
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Install Dependencies & Run Development Server
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Sample Profile Mode (Zero Setup Required)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Hunch includes a built-in **Sample Profile Mode**. Click **"Try Sample Profile"** in the top navigation or on the homepage to instantly explore the app with pre-seeded games, tags, and a calibrated taste vector without requiring a Steam account or Steam API key.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 5-Factor Pure Ranking Engine
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Hunch computes a 0–100 composite score from five pure mathematical factors:
+1. **Taste Match (40%):** Sparse tag-weighted cosine similarity against actual library playtime.
+2. **Review Quality (20%):** 95% Wilson score confidence lower bound.
+3. **Inverted Regret Risk (15%):** Penalizes games with high early drop-off (&lt;2 hours) and review sentiment volatility.
+4. **Time Fit (15%):** Gaussian distribution matching user bandwidth against median hours to beat.
+5. **Price & Sale Value (10%):** Active discount depth and price-per-hour ratio.
+
+---
+
+## Project Roadmap
+
+* [x] **Phase 1: Foundation & Editorial Design System**
+  * Scaffold light editorial theme, tokens, and typography
+  * OpenID 2.0 auth with nonce verification & sample profile mode
+  * Shared header, footer with Valve disclaimer, and core page states
+* [ ] **Phase 2: SteamSpy & Ingestion Pipeline**
+  * SteamSpy client for tags and median playtime
+  * Throttled catalog enrichment (~200 req / 5 min) and daily cron via Inngest
+* [ ] **Phase 3: Onboarding, Pure Ranking Engine & Taste Profile**
+  * `/start` onboarding flow, Wilson score unit tests, and pgvector HNSW indexing
+* [ ] **Phase 4: Core Recommendation Experience**
+  * `/for-you`, `/discover`, game details, and "Why this?" inspection drawer
+* [ ] **Phase 5: My Games, Squad Rooms & Polish**
+  * Local backlog & lists, Supabase Realtime squad rooms (max 1 veto), and profile radar
+
+---
+
+## Legal Disclaimer
+
+*Hunch is a fan project and is not affiliated with, authorized, maintained, sponsored, or endorsed by Valve Corporation or Steam. Steam and the Steam logo are registered trademarks of Valve Corporation in the U.S. and/or other countries.*

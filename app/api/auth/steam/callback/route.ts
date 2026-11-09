@@ -1,0 +1,100 @@
+import { NextRequest, NextResponse } from "next/server";
+import { verifySteamOpenIdResponse } from "@/lib/auth/steam-openid";
+import { createSessionToken, SESSION_COOKIE_OPTIONS } from "@/lib/auth/session";
+import { db } from "@/drizzle/db";
+import { users } from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
+
+export async function GET(req: NextRequest) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const searchParams = req.nextUrl.searchParams;
+
+  const verification = await verifySteamOpenIdResponse(searchParams, appUrl);
+  if (!verification.valid || !verification.steamId) {
+    const errorMsg = verification.error || "Failed to verify Steam OpenID signature";
+    return NextResponse.redirect(
+      new URL(`/?auth_error=${encodeURIComponent(errorMsg)}`, appUrl)
+    );
+  }
+
+  const steamId = verification.steamId;
+  const apiKey = process.env.STEAM_API_KEY;
+
+  let displayName = `Steam User (${steamId.slice(-4)})`;
+  let avatarUrl = "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg";
+  let profileUrl = `https://steamcommunity.com/profiles/${steamId}`;
+  let isPrivate = false;
+
+  // Attempt to fetch profile summary if API key is provided
+  if (apiKey && apiKey !== "dummy_steam_api_key_for_dev") {
+    try {
+      const summaryUrl = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`;
+      const res = await fetch(summaryUrl, { next: { revalidate: 60 } });
+      if (res.ok) {
+        const data = await res.json();
+        const player = data.response?.players?.[0];
+        if (player) {
+          displayName = player.personaname || displayName;
+          avatarUrl = player.avatarfull || player.avatarmedium || avatarUrl;
+          profileUrl = player.profileurl || profileUrl;
+          // communityvisibilitystate: 3 = public, 1 or 2 = private / friends only
+          isPrivate = player.communityvisibilitystate !== 3;
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch Steam player summary:", err);
+    }
+  }
+
+  // Upsert user in Postgres DB (with graceful fallback if DB is temporarily unreachable in dev)
+  let userId = `user_${steamId}`;
+  try {
+    const existing = await db
+      .select()
+      .from(users)
+      .where(eq(users.steamId, steamId))
+      .limit(1);
+
+    if (existing.length > 0) {
+      userId = existing[0].id;
+      await db
+        .update(users)
+        .set({
+          displayName,
+          avatarUrl,
+          profileUrl,
+          isPrivate,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
+    } else {
+      const [inserted] = await db
+        .insert(users)
+        .values({
+          steamId,
+          displayName,
+          avatarUrl,
+          profileUrl,
+          isPrivate,
+          isSampleUser: false,
+        })
+        .returning();
+      userId = inserted.id;
+    }
+  } catch (dbErr) {
+    console.warn("DB user sync skipped (offline or not migrated yet):", dbErr);
+  }
+
+  const token = await createSessionToken({
+    userId,
+    steamId,
+    displayName,
+    avatarUrl,
+    isSampleUser: false,
+    isPrivate,
+  });
+
+  const response = NextResponse.redirect(new URL("/for-you", appUrl));
+  response.cookies.set(SESSION_COOKIE_OPTIONS.name, token, SESSION_COOKIE_OPTIONS);
+  return response;
+}
