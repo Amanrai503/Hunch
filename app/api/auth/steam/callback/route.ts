@@ -85,6 +85,17 @@ export async function GET(req: NextRequest) {
     console.warn("DB user sync skipped (offline or not migrated yet):", dbErr);
   }
 
+  // Trigger background Steam library sync via Inngest
+  try {
+    const { inngest } = await import("@/inngest/client");
+    await inngest.send({
+      name: "user/library.sync.requested",
+      data: { userId, steamId },
+    });
+  } catch (inngestErr) {
+    console.warn("Inngest sync event dispatch skipped:", inngestErr);
+  }
+
   const token = await createSessionToken({
     userId,
     steamId,
@@ -98,3 +109,4 @@ export async function GET(req: NextRequest) {
   response.cookies.set(SESSION_COOKIE_OPTIONS.name, token, SESSION_COOKIE_OPTIONS);
   return response;
 }
+

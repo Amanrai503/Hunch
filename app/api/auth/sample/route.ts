@@ -8,28 +8,20 @@ import { eq } from "drizzle-orm";
 export async function GET() {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-  // Optionally ensure sample user exists in database if accessible
+  // Ensure sample database fixtures exist
   try {
     const existing = await db
-      .select()
+      .select({ id: users.id })
       .from(users)
       .where(eq(users.steamId, SAMPLE_USER.steamId))
       .limit(1);
 
     if (existing.length === 0) {
-      await db.insert(users).values({
-        id: SAMPLE_USER.id,
-        steamId: SAMPLE_USER.steamId,
-        displayName: SAMPLE_USER.displayName,
-        avatarUrl: SAMPLE_USER.avatarUrl,
-        profileUrl: SAMPLE_USER.profileUrl,
-        isPrivate: false,
-        isSampleUser: true,
-        tasteProfileJson: SAMPLE_USER.tasteProfileJson,
-      });
+      const { seedDatabase } = await import("@/lib/sample-data/seeder");
+      await seedDatabase();
     }
   } catch (err) {
-    console.warn("DB sample user ensure skipped (offline mode):", err);
+    console.warn("DB sample user auto-seed skipped (offline mode):", err);
   }
 
   const token = await createSessionToken({
@@ -45,3 +37,4 @@ export async function GET() {
   response.cookies.set(SESSION_COOKIE_OPTIONS.name, token, SESSION_COOKIE_OPTIONS);
   return response;
 }
+

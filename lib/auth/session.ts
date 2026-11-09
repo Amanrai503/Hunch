@@ -47,3 +47,4 @@ export const SESSION_COOKIE_OPTIONS = {
   path: "/",
   maxAge: 30 * 24 * 60 * 60, // 30 days
 };
+

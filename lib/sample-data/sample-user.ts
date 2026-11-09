@@ -18,3 +18,4 @@ export const SAMPLE_USER = {
     budgetPreference: "any" as const,
   },
 };
+

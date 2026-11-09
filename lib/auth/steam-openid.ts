@@ -119,3 +119,4 @@ export async function verifySteamOpenIdResponse(
     return { valid: false, error: `Authentication check failed: ${String(err)}` };
   }
 }
+

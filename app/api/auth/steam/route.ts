@@ -6,3 +6,4 @@ export async function GET() {
   const loginUrl = buildSteamLoginUrl(appUrl);
   return NextResponse.redirect(loginUrl);
 }
+

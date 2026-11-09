@@ -71,3 +71,4 @@ export function LearningState({ gamesCount = 3, className }: LearningStateProps)
     </div>
   );
 }
+

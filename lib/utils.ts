@@ -19,3 +19,4 @@ export function formatPrice(cents: number, currency = "USD"): string {
     currency,
   }).format(cents / 100);
 }
+

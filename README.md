@@ -87,9 +87,12 @@ Hunch computes a 0–100 composite score from five pure mathematical factors:
   * Scaffold light editorial theme, tokens, and typography
   * OpenID 2.0 auth with nonce verification & sample profile mode
   * Shared header, footer with Valve disclaimer, and core page states
-* [ ] **Phase 2: SteamSpy & Ingestion Pipeline**
-  * SteamSpy client for tags and median playtime
-  * Throttled catalog enrichment (~200 req / 5 min) and daily cron via Inngest
+* [x] **Phase 2: SteamSpy & Ingestion Pipeline**
+  * SteamSpy client (`lib/steam/steamspy.ts`) for tags, owner counts, and median playtime
+  * Rate-limited Steam Storefront API client (`lib/steam/store-api.ts`) with backoff (~200 req / 5 min)
+  * Steam Web API library sync (`lib/steam/client.ts`) for user owned games & playtimes
+  * Inngest functions: `seed-catalog` (2–5k games enrichment), `sync-steam-library`, `daily-resync-cron`
+  * Curated 50+ rich game fixtures (`lib/sample-data/sample-games.ts`) & database seeder (`lib/sample-data/seeder.ts`)
 * [ ] **Phase 3: Onboarding, Pure Ranking Engine & Taste Profile**
   * `/start` onboarding flow, Wilson score unit tests, and pgvector HNSW indexing
 * [ ] **Phase 4: Core Recommendation Experience**
