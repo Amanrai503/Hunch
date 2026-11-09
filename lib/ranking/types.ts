@@ -11,6 +11,8 @@ export interface CandidateGameInput {
   id: string;
   steamAppId: number;
   name: string;
+  headerImage?: string;
+  capsuleImage?: string;
   precomputedSimilarity: number; // 0 to 1, from sparse cosine or pgvector HNSW
   tags: { tag: string; weight: number }[];
   positiveReviews: number;
@@ -23,6 +25,7 @@ export interface CandidateGameInput {
   priceInitialCents: number;
   discountPercent: number;
   isFree: boolean;
+  steamDeckCompatibility?: "verified" | "playable" | "unsupported" | "unknown";
   releaseDate?: Date | null;
 }
 

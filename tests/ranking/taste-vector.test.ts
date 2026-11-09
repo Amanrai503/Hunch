@@ -80,3 +80,4 @@ test("Taste Vector: project to 128-dimensional dense vector for pgvector", () =>
   }
   assert.ok(Math.abs(norm - 1.0) < 0.005);
 });
+

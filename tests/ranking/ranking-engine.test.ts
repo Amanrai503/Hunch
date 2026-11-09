@@ -114,3 +114,4 @@ test("rankGamesForUser: handles free-to-play games and edge cases gracefully", (
   assert.strictEqual(res.factors.priceValue.score, 100);
   assert.ok(res.reasons.some((r) => r.toLowerCase().includes("free")));
 });
+

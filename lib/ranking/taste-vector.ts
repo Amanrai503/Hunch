@@ -119,3 +119,4 @@ export function projectSparseToDense128(sparse: SparseVector): number[] {
 
   return dense.map((v) => Number((v / norm).toFixed(6)));
 }
+

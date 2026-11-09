@@ -99,8 +99,13 @@ Hunch computes a 0–100 composite score from five pure mathematical factors:
   * Explainable score breakdown & "Why this?" rationale generator (`lib/ranking/explainer.ts`)
   * Sparse tag-weight vector synthesis, L2 normalization, and 128D projection for pgvector (`lib/ranking/taste-vector.ts`)
   * Unit test suite with 12/12 passing tests (`npm test`) across Wilson formula, pure ranking, and vectors
-* [ ] **Phase 4: Core Recommendation Experience**
-  * `/for-you`, `/discover`, game details, and "Why this?" inspection drawer
+* [x] **Phase 4: Core Recommendation Experience**
+  * Algorithmic recommendation feed at `/for-you` with quick filters (Deck verified, Under $20, Under 25h, Sales)
+  * Exploratory catalog at `/discover` with multi-facet searching, genre carousels, and multi-mode sorting
+  * Recommendation card component with match %, review badges, and playtime estimates
+  * Slide-out "Why This?" drawer with 5-factor breakdown bars, Wilson metrics, and plain-English reasons
+  * Complete feedback loop (`/api/feedback` & `/api/ratings`): Not Interested, Already Played, Hide, and 1–10 rating dialog with DB check constraint
+  * Game detail page at `/games/[appId]` with SteamSpy community tags, regret risk analysis, and store links
 * [ ] **Phase 5: My Games, Squad Rooms & Polish**
   * Local backlog & lists, Supabase Realtime squad rooms (max 1 veto), and profile radar
 
