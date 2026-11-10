@@ -239,3 +239,4 @@ export function WhyThisDrawer({ result, isOpen, onClose }: WhyThisDrawerProps) {
     </div>
   );
 }
+

@@ -64,6 +64,62 @@ Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
+## Docker & AWS EC2 Deployment 🐳
+
+### Option A: Complete Stack via Docker Compose (Recommended)
+Runs both the Next.js web application and PostgreSQL with `pgvector`, automatically mounts schema migrations into `/docker-entrypoint-initdb.d/`, and sets up container networking.
+
+1. **Clone repository on your EC2 instance:**
+   ```bash
+   git clone <your-repo-url>
+   cd hunch
+   ```
+
+2. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   # Set NEXT_PUBLIC_APP_URL to your EC2 public IP or domain:
+   # NEXT_PUBLIC_APP_URL=http://<YOUR_EC2_PUBLIC_IP>:3000
+   ```
+
+3. **Build and start containers:**
+   ```bash
+   docker compose up -d --build
+   ```
+
+4. **Seed database with 50+ curated games & SteamSpy metadata:**
+   ```bash
+   curl http://localhost:3000/api/seed
+   ```
+
+5. **AWS EC2 Security Group:**
+   Ensure Inbound Rules allow **Custom TCP Port 3000** (or port 80 if reverse-proxied with Nginx) from your IP or `0.0.0.0/0`.
+   Open `http://<YOUR_EC2_PUBLIC_IP>:3000` in your browser.
+
+---
+
+### Option B: Standalone Docker Run
+If connecting to an external database (e.g., AWS RDS PostgreSQL with `pgvector` or Supabase):
+
+1. **Build image:**
+   ```bash
+   docker build -t hunch .
+   ```
+
+2. **Run container:**
+   ```bash
+   docker run -d \
+     -p 3000:3000 \
+     --name hunch \
+     --restart always \
+     -e DATABASE_URL="postgresql://user:password@your-db-host:5432/hunch" \
+     -e SESSION_SECRET="development_secret_must_be_at_least_32_bytes_long_hunch" \
+     -e NEXT_PUBLIC_APP_URL="http://<YOUR_EC2_PUBLIC_IP>:3000" \
+     hunch
+   ```
+
+---
+
 ## Sample Profile Mode (Zero Setup Required)
 
 Hunch includes a built-in **Sample Profile Mode**. Click **"Try Sample Profile"** in the top navigation or on the homepage to instantly explore the app with pre-seeded games, tags, and a calibrated taste vector without requiring a Steam account or Steam API key.

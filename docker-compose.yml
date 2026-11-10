@@ -4,19 +4,47 @@ services:
     container_name: hunch_postgres
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: hunch
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-hunch}
     ports:
       - "5432:5432"
     volumes:
       - hunch_pgdata:/var/lib/postgresql/data
+      - ./drizzle/migrations/0000_lovely_blink.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hunch"]
       interval: 5s
       timeout: 5s
       retries: 5
 
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+    container_name: hunch_web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:password@postgres:5432/hunch}
+      - SESSION_SECRET=${SESSION_SECRET:-development_secret_must_be_at_least_32_bytes_long_hunch}
+      - STEAM_API_KEY=${STEAM_API_KEY:-}
+      - INNGEST_EVENT_KEY=${INNGEST_EVENT_KEY:-local}
+      - INNGEST_SIGNING_KEY=${INNGEST_SIGNING_KEY:-local}
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   hunch_pgdata:
-
