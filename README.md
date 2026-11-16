@@ -120,6 +120,38 @@ If connecting to an external database (e.g., AWS RDS PostgreSQL with `pgvector` 
 
 ---
 
+## Jenkins CI/CD Pipeline & GitHub Webhook 🚀
+
+This repository includes a production-ready declarative [`Jenkinsfile`](./Jenkinsfile) that automates linting, testing, Docker image building, zero-downtime container updating, and post-deploy health checks whenever code is pushed to GitHub.
+
+### 1. GitHub Webhook Setup
+1. Go to your GitHub repository -> **Settings** -> **Webhooks** -> **Add webhook**.
+2. **Payload URL:** `http://<YOUR_JENKINS_SERVER_IP>:8080/github-webhook/`
+3. **Content type:** `application/json`
+4. **Which events would you like to trigger this webhook?** Select **Just the push event**.
+5. Click **Add webhook**.
+
+### 2. Jenkins Job Configuration
+1. In Jenkins dashboard, click **New Item** -> Name it `hunch-pipeline` -> Select **Pipeline** -> Click **OK**.
+2. Under **Build Triggers**, check **GitHub hook trigger for GITScm polling**.
+3. Under **Pipeline**:
+   - **Definition:** Pipeline script from SCM
+   - **SCM:** Git
+   - **Repository URL:** `<your-github-repo-url>`
+   - **Branch Specifier:** `*/main`
+   - **Script Path:** `Jenkinsfile`
+4. Click **Save**.
+
+### 3. Pipeline Stages Executed on Every Push
+- **Checkout:** Pulls the latest commit.
+- **Test & Lint:** Runs `npm ci`, ESLint, and the 12 ranking algorithm unit tests.
+- **Build Docker Image:** Builds the Next.js standalone container tagged with the Jenkins build number (`hunch-web:<build_number>` and `hunch-web:latest`).
+- **Deploy & Update Service:** Gracefully updates the running container using `docker compose up -d --build --no-deps web`.
+- **Health Check:** Polls `http://localhost:3000` until HTTP 200 is verified.
+- **Cleanup:** Automatically prunes unused dangling Docker images.
+
+---
+
 ## Sample Profile Mode (Zero Setup Required)
 
 Hunch includes a built-in **Sample Profile Mode**. Click **"Try Sample Profile"** in the top navigation or on the homepage to instantly explore the app with pre-seeded games, tags, and a calibrated taste vector without requiring a Steam account or Steam API key.
