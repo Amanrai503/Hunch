@@ -59,10 +59,18 @@ export default async function GameDetailPage({
           <img
             src={
               game.headerImage ||
-              `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${game.steamAppId}/header.jpg`
+              `https://shared.steamstatic.com/store_item_assets/steam/apps/${game.steamAppId}/header.jpg`
             }
             alt={game.name}
             className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              const target = e.currentTarget;
+              const fallbackUrl = `https://steamcdn-a.akamaihd.net/steam/apps/${game.steamAppId}/header.jpg`;
+              if (target.src !== fallbackUrl) {
+                target.src = fallbackUrl;
+              }
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent flex items-end p-6 sm:p-8">
             <div className="space-y-2 text-white max-w-2xl">

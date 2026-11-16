@@ -95,6 +95,7 @@ export function TopNav({ user }: TopNavProps) {
                     src={user.avatarUrl}
                     alt={user.displayName}
                     className="h-8 w-8 rounded-full border border-line object-cover"
+                    referrerPolicy="no-referrer"
                   />
                   <span className="hidden sm:inline text-xs font-medium text-ink max-w-[120px] truncate">
                     {user.displayName}

@@ -21,6 +21,7 @@ export const metadata: Metadata = {
   title: "Hunch — Steam Recommendations, Explained",
   description:
     "Discover your next favorite Steam game with explainable, filterable picks based on your real library and play habits.",
+  referrer: "no-referrer",
 };
 
 export default async function RootLayout({

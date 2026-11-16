@@ -218,10 +218,18 @@ export default function MyGamesPage() {
                 <img
                   src={
                     g.capsuleImage ||
-                    `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${g.steamAppId}/capsule_231x87.jpg`
+                    `https://shared.steamstatic.com/store_item_assets/steam/apps/${g.steamAppId}/capsule_231x87.jpg`
                   }
                   alt={g.name}
                   className="w-24 h-auto rounded-md object-cover border border-line shrink-0"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    const fallbackUrl = `https://steamcdn-a.akamaihd.net/steam/apps/${g.steamAppId}/capsule_231x87.jpg`;
+                    if (target.src !== fallbackUrl) {
+                      target.src = fallbackUrl;
+                    }
+                  }}
                 />
                 <div className="flex-1 min-w-0">
                   <Link
@@ -278,10 +286,18 @@ export default function MyGamesPage() {
                   <img
                     src={
                       g.capsuleImage ||
-                      `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${g.steamAppId}/capsule_231x87.jpg`
+                      `https://shared.steamstatic.com/store_item_assets/steam/apps/${g.steamAppId}/capsule_231x87.jpg`
                     }
                     alt={g.name}
                     className="w-24 h-auto rounded-md object-cover border border-line shrink-0"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      const fallbackUrl = `https://steamcdn-a.akamaihd.net/steam/apps/${g.steamAppId}/capsule_231x87.jpg`;
+                      if (target.src !== fallbackUrl) {
+                        target.src = fallbackUrl;
+                      }
+                    }}
                   />
                   <div className="flex-1 min-w-0">
                     <Link

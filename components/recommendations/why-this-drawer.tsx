@@ -143,10 +143,18 @@ export function WhyThisDrawer({ result, isOpen, onClose }: WhyThisDrawerProps) {
             <img
               src={
                 game.capsuleImage ||
-                `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${game.steamAppId}/capsule_231x87.jpg`
+                `https://shared.steamstatic.com/store_item_assets/steam/apps/${game.steamAppId}/capsule_231x87.jpg`
               }
               alt={game.name}
               className="w-24 h-auto rounded-md border border-line object-cover shrink-0"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.currentTarget;
+                const fallbackUrl = `https://steamcdn-a.akamaihd.net/steam/apps/${game.steamAppId}/capsule_231x87.jpg`;
+                if (target.src !== fallbackUrl) {
+                  target.src = fallbackUrl;
+                }
+              }}
             />
             <div className="flex-1 min-w-0">
               <h3 className="font-heading text-lg font-bold text-ink truncate">{game.name}</h3>

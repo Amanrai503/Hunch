@@ -63,8 +63,8 @@ export const syncSteamLibraryFunction = inngest.createFunction(
             chunk.map((g: SteamOwnedGame) => ({
               steamAppId: g.appid,
               name: g.name || `Steam App ${g.appid}`,
-              headerImage: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${g.appid}/header.jpg`,
-              capsuleImage: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${g.appid}/capsule_231x87.jpg`,
+              headerImage: `https://shared.steamstatic.com/store_item_assets/steam/apps/${g.appid}/header.jpg`,
+              capsuleImage: `https://shared.steamstatic.com/store_item_assets/steam/apps/${g.appid}/capsule_231x87.jpg`,
             }))
           )
           .onConflictDoNothing();

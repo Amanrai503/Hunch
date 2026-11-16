@@ -47,7 +47,7 @@ export async function seedDatabase() {
         shortDescription: g.shortDescription,
         headerImage: g.headerImage,
         capsuleImage: g.capsuleImage,
-        heroImage: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${g.steamAppId}/library_hero.jpg`,
+        heroImage: `https://shared.steamstatic.com/store_item_assets/steam/apps/${g.steamAppId}/library_hero.jpg`,
         currency: g.currency,
         priceInitial: g.priceInitial,
         priceFinal: g.priceFinal,

@@ -34,11 +34,19 @@ export function RecommendationCard({
           <img
             src={
               game.headerImage ||
-              `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${game.steamAppId}/header.jpg`
+              `https://shared.steamstatic.com/store_item_assets/steam/apps/${game.steamAppId}/header.jpg`
             }
             alt={game.name}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              const target = e.currentTarget;
+              const fallbackUrl = `https://steamcdn-a.akamaihd.net/steam/apps/${game.steamAppId}/header.jpg`;
+              if (target.src !== fallbackUrl) {
+                target.src = fallbackUrl;
+              }
+            }}
           />
 
           {/* Match Score Badge */}

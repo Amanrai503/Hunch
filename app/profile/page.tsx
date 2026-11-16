@@ -103,6 +103,7 @@ export default function ProfilePage() {
               src={user.avatarUrl}
               alt={user.displayName}
               className="h-20 w-20 sm:h-24 sm:w-24 rounded-full border-2 border-line object-cover shadow-xs"
+              referrerPolicy="no-referrer"
             />
             <div className="space-y-1.5">
               <div className="flex items-center gap-2.5 flex-wrap">

@@ -92,7 +92,7 @@ export default function SquadRoomPage({
       steamAppId: 1942280, // Brotato
       name: "Brotato",
       headerImage:
-        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1942280/header.jpg",
+        "https://shared.steamstatic.com/store_item_assets/steam/apps/1942280/header.jpg",
       priceFinal: 499,
       discountPercent: 0,
       estimatedHours: 25,
@@ -102,7 +102,7 @@ export default function SquadRoomPage({
       steamAppId: 1794680, // Vampire Survivors
       name: "Vampire Survivors",
       headerImage:
-        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1794680/header.jpg",
+        "https://shared.steamstatic.com/store_item_assets/steam/apps/1794680/header.jpg",
       priceFinal: 499,
       discountPercent: 0,
       estimatedHours: 40,
@@ -112,7 +112,7 @@ export default function SquadRoomPage({
       steamAppId: 2379780, // Balatro
       name: "Balatro",
       headerImage:
-        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2379780/header.jpg",
+        "https://shared.steamstatic.com/store_item_assets/steam/apps/2379780/header.jpg",
       priceFinal: 1499,
       discountPercent: 10,
       estimatedHours: 50,
@@ -122,7 +122,7 @@ export default function SquadRoomPage({
       steamAppId: 286160, // Tabletop Simulator
       name: "Tabletop Simulator",
       headerImage:
-        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/286160/header.jpg",
+        "https://shared.steamstatic.com/store_item_assets/steam/apps/286160/header.jpg",
       priceFinal: 1999,
       discountPercent: 50,
       estimatedHours: 100,
@@ -132,7 +132,7 @@ export default function SquadRoomPage({
       steamAppId: 1145360, // Hades
       name: "Hades",
       headerImage:
-        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1145360/header.jpg",
+        "https://shared.steamstatic.com/store_item_assets/steam/apps/1145360/header.jpg",
       priceFinal: 2499,
       discountPercent: 0,
       estimatedHours: 35,
@@ -142,7 +142,7 @@ export default function SquadRoomPage({
       steamAppId: 588650, // Dead Cells
       name: "Dead Cells",
       headerImage:
-        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/588650/header.jpg",
+        "https://shared.steamstatic.com/store_item_assets/steam/apps/588650/header.jpg",
       priceFinal: 2499,
       discountPercent: 50,
       estimatedHours: 30,
@@ -575,6 +575,14 @@ export default function SquadRoomPage({
                 src={currentGame.headerImage}
                 alt={currentGame.name}
                 className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  const fallbackUrl = `https://steamcdn-a.akamaihd.net/steam/apps/${currentGame.steamAppId}/header.jpg`;
+                  if (target.src !== fallbackUrl) {
+                    target.src = fallbackUrl;
+                  }
+                }}
               />
               <div className="absolute top-3 right-3 bg-surface/90 backdrop-blur-xs px-2.5 py-1 rounded-md text-xs font-bold text-ink border border-line">
                 {formatPrice(currentGame.priceFinal)}
@@ -759,10 +767,18 @@ export default function SquadRoomPage({
                     <img
                       src={
                         game.headerImage ||
-                        `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${game.steamAppId}/capsule_231x87.jpg`
+                        `https://shared.steamstatic.com/store_item_assets/steam/apps/${game.steamAppId}/capsule_231x87.jpg`
                       }
                       alt={game.name}
                       className="w-20 h-auto rounded-md object-cover border border-line shrink-0"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        const fallbackUrl = `https://steamcdn-a.akamaihd.net/steam/apps/${game.steamAppId}/capsule_231x87.jpg`;
+                        if (target.src !== fallbackUrl) {
+                          target.src = fallbackUrl;
+                        }
+                      }}
                     />
 
                     {/* Details */}
