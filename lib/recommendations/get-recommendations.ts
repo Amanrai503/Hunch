@@ -24,6 +24,18 @@ export interface RecommendationFilters {
   searchQuery?: string;
 }
 
+let dbOfflineLogged = false;
+
+function isConnRefused(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { code?: string; cause?: { code?: string; errors?: { code?: string }[] } };
+  return (
+    e.code === "ECONNREFUSED" ||
+    e.cause?.code === "ECONNREFUSED" ||
+    Boolean(e.cause?.errors?.some((sub) => sub.code === "ECONNREFUSED"))
+  );
+}
+
 export async function getRecommendationsForUser(
   userId?: string,
   filters: RecommendationFilters = {}
@@ -85,7 +97,14 @@ export async function getRecommendationsForUser(
         excludedAppIds.add(row.steamAppId);
       }
     } catch (err) {
-      console.warn("DB user fetch error in recommendations (falling back):", err);
+      if (isConnRefused(err)) {
+        if (!dbOfflineLogged) {
+          console.info("ℹ️ [Hunch DB] PostgreSQL not detected on localhost:5432. Running gracefully in Sample Mode with curated game fixtures.");
+          dbOfflineLogged = true;
+        }
+      } else {
+        console.warn("DB user fetch error in recommendations (falling back):", (err as Error)?.message || err);
+      }
     }
   }
 
@@ -128,7 +147,9 @@ export async function getRecommendationsForUser(
       }));
     }
   } catch (err) {
-    console.warn("DB candidates fetch fallback:", err);
+    if (!isConnRefused(err)) {
+      console.warn("DB candidates fetch fallback:", (err as Error)?.message || err);
+    }
   }
 
   // Fallback to rich sample fixtures if DB has no games or is offline

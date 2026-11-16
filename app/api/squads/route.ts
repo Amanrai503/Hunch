@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
         isHost: true,
       });
     } catch (err) {
-      console.warn("DB squad creation fallback:", err);
+      console.warn("DB squad creation fallback:", (err as Error)?.message || err);
     }
 
     return NextResponse.json({ success: true, squad: newSquad, code });

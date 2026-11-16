@@ -100,7 +100,7 @@ export async function GET(
       }
     }
   } catch (err) {
-    console.warn("DB squad fetch fallback:", err);
+    console.warn("DB squad fetch fallback:", (err as Error)?.message || err);
   }
 
   return NextResponse.json({ squad: roomData });

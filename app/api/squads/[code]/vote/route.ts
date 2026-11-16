@@ -90,7 +90,7 @@ export async function POST(
           });
       }
     } catch (dbErr) {
-      console.warn("DB vote recording fallback:", dbErr);
+      console.warn("DB vote recording fallback:", (dbErr as Error)?.message || dbErr);
     }
 
     return NextResponse.json({
