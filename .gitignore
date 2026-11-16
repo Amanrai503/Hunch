@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /.pnp
@@ -10,33 +8,56 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# testing & coverage
 /coverage
+*.lcov
 
-# next.js
+# next.js build & output
 /.next/
 /out/
-
-# production
 /build
 
-# misc
-.DS_Store
-*.pem
+# environment files (prevent accidental token/key leaks)
+.env*
+!.env.example
 
-# debug
+# secrets, keys, and certificates
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+id_rsa*
+id_ed25519*
+
+# logs and debug files
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-!.env.example
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE & Editor settings
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+
+# Docker local overrides
+docker-compose.override.yml
 
 # vercel
 .vercel
 
-# typescript
+# typescript & lint cache
 *.tsbuildinfo
 next-env.d.ts
+.eslintcache
