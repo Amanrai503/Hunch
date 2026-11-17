@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server";
-import { createSessionToken, SESSION_COOKIE_OPTIONS } from "@/lib/auth/session";
+import { NextRequest, NextResponse } from "next/server";
+import { createSessionToken, getSessionCookieOptions } from "@/lib/auth/session";
+import { getAppBaseUrl } from "@/lib/auth/url-helpers";
 import { SAMPLE_USER } from "@/lib/sample-data/sample-user";
 import { db } from "@/drizzle/db";
 import { users } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 
-export async function GET() {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+export async function GET(req: NextRequest) {
+  const appUrl = getAppBaseUrl(req);
 
   // Ensure sample database fixtures exist
   try {
@@ -33,8 +34,10 @@ export async function GET() {
     isPrivate: false,
   });
 
+  const cookieOptions = getSessionCookieOptions(req);
   const response = NextResponse.redirect(new URL("/for-you", appUrl));
-  response.cookies.set(SESSION_COOKIE_OPTIONS.name, token, SESSION_COOKIE_OPTIONS);
+  response.cookies.set(cookieOptions.name, token, cookieOptions);
   return response;
 }
+
 

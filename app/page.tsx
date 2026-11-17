@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Sparkles,
   ShieldCheck,
@@ -10,11 +11,41 @@ import {
   ThumbsUp,
   ArrowRight,
   CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import { LoadingState } from "@/components/states/loading-state";
 import { EmptyState } from "@/components/states/empty-state";
 import { PrivateProfileState } from "@/components/states/private-profile-state";
 import { LearningState } from "@/components/states/learning-state";
+
+function AuthAlert() {
+  const searchParams = useSearchParams();
+  const authError = searchParams.get("auth_error");
+  const loginRequired = searchParams.get("login_required");
+
+  if (!authError && !loginRequired) return null;
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6">
+      <div
+        className={`p-4 rounded-xl border flex items-center justify-between text-sm ${
+          authError
+            ? "border-amber-200 bg-amber-50 text-amber-900"
+            : "border-blue-200 bg-blue-50 text-blue-900"
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          <span>
+            {authError
+              ? `Authentication notice: ${authError}. Please try signing in again.`
+              : "Please sign in with Steam or try the Sample Profile to access that page."}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const [activeStateTab, setActiveStateTab] = useState<
@@ -23,7 +54,12 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <Suspense fallback={null}>
+        <AuthAlert />
+      </Suspense>
+
       {/* Hero Section */}
+
       <section className="relative border-b border-line bg-surface/40 py-20 lg:py-28 overflow-hidden">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl space-y-6">

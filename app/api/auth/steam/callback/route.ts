@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySteamOpenIdResponse } from "@/lib/auth/steam-openid";
-import { createSessionToken, SESSION_COOKIE_OPTIONS } from "@/lib/auth/session";
+import { createSessionToken, getSessionCookieOptions } from "@/lib/auth/session";
+import { getAppBaseUrl } from "@/lib/auth/url-helpers";
+import { syncUserSteamLibrary } from "@/lib/steam/sync-user-library";
 import { db } from "@/drizzle/db";
 import { users } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppBaseUrl(req);
   const searchParams = req.nextUrl.searchParams;
 
   const verification = await verifySteamOpenIdResponse(searchParams, appUrl);
   if (!verification.valid || !verification.steamId) {
     const errorMsg = verification.error || "Failed to verify Steam OpenID signature";
+    console.error("[Steam Auth Callback Error]", errorMsg);
     return NextResponse.redirect(
       new URL(`/?auth_error=${encodeURIComponent(errorMsg)}`, appUrl)
     );
@@ -46,7 +49,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Upsert user in Postgres DB (with graceful fallback if DB is temporarily unreachable in dev)
+  // Upsert user in Postgres DB
   let userId = `user_${steamId}`;
   try {
     const existing = await db
@@ -79,21 +82,30 @@ export async function GET(req: NextRequest) {
           isSampleUser: false,
         })
         .returning();
-      userId = inserted.id;
+      if (inserted) {
+        userId = inserted.id;
+      }
     }
   } catch (dbErr) {
     console.warn("DB user sync skipped (offline or not migrated yet):", dbErr);
   }
 
-  // Trigger background Steam library sync via Inngest
+  // Synchronously sync the user's Steam library & synthesize personalized taste profile
+  try {
+    await syncUserSteamLibrary({ userId, steamId, apiKey });
+  } catch (syncErr) {
+    console.warn("Initial Steam library sync encountered warning:", syncErr);
+  }
+
+  // Also dispatch background Inngest event if Inngest is configured
   try {
     const { inngest } = await import("@/inngest/client");
     await inngest.send({
       name: "user/library.sync.requested",
       data: { userId, steamId },
     });
-  } catch (inngestErr) {
-    console.warn("Inngest sync event dispatch skipped:", inngestErr);
+  } catch {
+    // Inngest daemon not running in standalone container is expected
   }
 
   const token = await createSessionToken({
@@ -105,8 +117,10 @@ export async function GET(req: NextRequest) {
     isPrivate,
   });
 
+  const cookieOptions = getSessionCookieOptions(req);
   const response = NextResponse.redirect(new URL("/for-you", appUrl));
-  response.cookies.set(SESSION_COOKIE_OPTIONS.name, token, SESSION_COOKIE_OPTIONS);
+  response.cookies.set(cookieOptions.name, token, cookieOptions);
   return response;
 }
+
 

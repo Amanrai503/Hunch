@@ -12,8 +12,10 @@ import {
   buildUserTasteVector,
   calculateSparseCosineSimilarity,
   SparseVector,
+  LibraryGameForTaste,
 } from "@/lib/ranking/taste-vector";
 import { SAMPLE_GAMES } from "@/lib/sample-data/sample-games";
+
 
 export interface RecommendationFilters {
   deckVerifiedOnly?: boolean;
@@ -48,6 +50,7 @@ export async function getRecommendationsForUser(
 
   let userTasteVector: SparseVector = {};
   const excludedAppIds = new Set<number>();
+  let libraryForTaste: LibraryGameForTaste[] = [];
 
   // 1. Fetch user data, library, and feedback exclusions from DB if userId provided
   if (userId) {
@@ -70,15 +73,50 @@ export async function getRecommendationsForUser(
         }
       }
 
-      // Exclude owned library games
+      // Exclude owned library games and gather played games for taste profile
       const owned = await db
-        .select({ steamAppId: games.steamAppId })
+        .select({
+          steamAppId: games.steamAppId,
+          gameId: games.id,
+          playtime: libraryItems.playtimeForeverMinutes,
+        })
         .from(libraryItems)
         .innerJoin(games, eq(libraryItems.gameId, games.id))
         .where(eq(libraryItems.userId, userId));
 
+      const playedGameIds: string[] = [];
+      const gamePlaytimes = new Map<string, number>();
+
       for (const row of owned) {
         excludedAppIds.add(row.steamAppId);
+        if (row.playtime > 0) {
+          playedGameIds.push(row.gameId);
+          gamePlaytimes.set(row.gameId, row.playtime);
+        }
+      }
+
+      // Fetch tags for user's played games to synthesize their real taste vector
+      if (playedGameIds.length > 0) {
+        const tagRows = await db
+          .select({
+            gameId: gameTags.gameId,
+            tag: gameTags.tag,
+            weight: gameTags.weight,
+          })
+          .from(gameTags)
+          .where(inArray(gameTags.gameId, playedGameIds.slice(0, 100)));
+
+        const tagMap = new Map<string, { tag: string; weight: number }[]>();
+        for (const tr of tagRows) {
+          const list = tagMap.get(tr.gameId) || [];
+          list.push({ tag: tr.tag, weight: tr.weight });
+          tagMap.set(tr.gameId, list);
+        }
+
+        libraryForTaste = playedGameIds.map((gid) => ({
+          playtimeForeverMinutes: gamePlaytimes.get(gid) || 0,
+          tags: tagMap.get(gid) || [],
+        }));
       }
 
       // Exclude dismissed feedback games (not interested, hide, already played)
@@ -177,8 +215,8 @@ export async function getRecommendationsForUser(
     }));
   }
 
-  // 3. Build user taste vector from favorite tags & sample history
-  userTasteVector = buildUserTasteVector([], userProfile.favoriteTags || []);
+  // 3. Build user taste vector from user's actual library & favorite tags
+  userTasteVector = buildUserTasteVector(libraryForTaste, userProfile.favoriteTags || []);
 
   // 4. Calculate tag similarity for each candidate
   for (const c of rawCandidates) {
@@ -192,9 +230,12 @@ export async function getRecommendationsForUser(
   // 6. Apply filter parameters
   let filtered = ranked;
 
-  // Filter out excluded games (unless only 1-2 remain)
-  if (filtered.length > excludedAppIds.size + 2) {
-    filtered = filtered.filter((r) => !excludedAppIds.has(r.game.steamAppId));
+  // Filter out owned and dismissed games (unless all candidates are owned)
+  if (excludedAppIds.size > 0) {
+    const unowned = filtered.filter((r) => !excludedAppIds.has(r.game.steamAppId));
+    if (unowned.length > 0) {
+      filtered = unowned;
+    }
   }
 
   if (filters.deckVerifiedOnly) {

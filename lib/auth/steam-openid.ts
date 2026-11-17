@@ -14,8 +14,9 @@ function cleanExpiredNonces() {
 }
 
 export function buildSteamLoginUrl(appUrl: string): string {
-  const returnTo = `${appUrl.replace(/\/$/, "")}/api/auth/steam/callback`;
-  const realm = appUrl.replace(/\/$/, "");
+  const cleanAppUrl = appUrl.replace(/\/$/, "");
+  const returnTo = `${cleanAppUrl}/api/auth/steam/callback`;
+  const realm = `${cleanAppUrl}/`;
 
   const params = new URLSearchParams({
     "openid.ns": OPENID_NS,
@@ -37,24 +38,33 @@ export interface VerifyOpenIdResult {
 
 export async function verifySteamOpenIdResponse(
   searchParams: URLSearchParams,
-  appUrl: string
+  _appUrl?: string
 ): Promise<VerifyOpenIdResult> {
+  void _appUrl;
   cleanExpiredNonces();
 
   // 1. Verify openid.mode is id_res
   const mode = searchParams.get("openid.mode");
   if (mode !== "id_res") {
-    return { valid: false, error: "Invalid openid.mode, expected id_res" };
+    return { valid: false, error: `Invalid openid.mode, expected id_res, received: ${mode || "empty"}` };
   }
 
-  // 2. Validate return_to and realm
+  // 2. Validate return_to callback route
   const returnTo = searchParams.get("openid.return_to");
-  const expectedReturnTo = `${appUrl.replace(/\/$/, "")}/api/auth/steam/callback`;
-  if (!returnTo || !returnTo.startsWith(expectedReturnTo)) {
-    return { valid: false, error: "openid.return_to mismatch" };
+  if (!returnTo) {
+    return { valid: false, error: "Missing openid.return_to parameter" };
   }
 
-  // 3. Nonce validation and replay protection
+  try {
+    const returnToUrl = new URL(returnTo);
+    if (!returnToUrl.pathname.endsWith("/api/auth/steam/callback")) {
+      return { valid: false, error: `Invalid openid.return_to callback path: ${returnToUrl.pathname}` };
+    }
+  } catch {
+    return { valid: false, error: `Malformed openid.return_to URL: ${returnTo}` };
+  }
+
+  // 3. Nonce validation and replay protection (15 minute skew window for cloud servers)
   const nonce = searchParams.get("openid.response_nonce");
   if (!nonce) {
     return { valid: false, error: "Missing openid.response_nonce" };
@@ -64,24 +74,27 @@ export async function verifySteamOpenIdResponse(
     return { valid: false, error: "Nonce has already been used (replay rejected)" };
   }
 
-  // Steam response_nonce format starts with an ISO timestamp, e.g., 2026-11-09T14:30:00Z...
-  const nonceIsoDateStr = nonce.slice(0, 20);
-  const nonceTime = Date.parse(nonceIsoDateStr);
+  // Steam response_nonce format starts with an ISO timestamp, e.g., 2026-11-17T14:30:00Z...
+  const isoMatch = nonce.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)/);
+  const nonceTime = isoMatch ? Date.parse(isoMatch[1]) : Date.parse(nonce.slice(0, 20));
   const now = Date.now();
-  const FIVE_MINUTES_MS = 5 * 60 * 1000;
+  const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
-  if (isNaN(nonceTime) || Math.abs(now - nonceTime) > FIVE_MINUTES_MS) {
-    return { valid: false, error: "Nonce timestamp is invalid or older than 5 minutes" };
+  if (isNaN(nonceTime) || Math.abs(now - nonceTime) > FIFTEEN_MINUTES_MS) {
+    return {
+      valid: false,
+      error: `Nonce timestamp is invalid or drifted (nonce: ${nonce.slice(0, 25)}, server: ${new Date(now).toISOString()})`,
+    };
   }
 
   // Store nonce to prevent replay
-  seenNonces.set(nonce, now + FIVE_MINUTES_MS);
+  seenNonces.set(nonce, now + FIFTEEN_MINUTES_MS);
 
   // 4. Extract 64-bit SteamID from openid.claimed_id
   const claimedId = searchParams.get("openid.claimed_id") || "";
   const steamIdMatch = claimedId.match(/^https:\/\/steamcommunity\.com\/openid\/id\/(\d{17,20})$/);
   if (!steamIdMatch || !steamIdMatch[1]) {
-    return { valid: false, error: "Invalid claimed_id structure" };
+    return { valid: false, error: `Invalid claimed_id structure: ${claimedId}` };
   }
   const steamId = steamIdMatch[1];
 
@@ -108,14 +121,16 @@ export async function verifySteamOpenIdResponse(
     }
 
     const text = await res.text();
-    const isValid = text.split("\n").some((line) => line.trim() === "is_valid:true");
+    const isValid = /is_valid\s*:\s*true/i.test(text);
 
     if (!isValid) {
-      return { valid: false, error: "Steam returned is_valid:false" };
+      console.error("[Steam OpenID] check_authentication failed. Response body:", text);
+      return { valid: false, error: "Steam check_authentication returned is_valid:false" };
     }
 
     return { valid: true, steamId };
   } catch (err) {
+    console.error("[Steam OpenID] Network error during check_authentication:", err);
     return { valid: false, error: `Authentication check failed: ${String(err)}` };
   }
 }

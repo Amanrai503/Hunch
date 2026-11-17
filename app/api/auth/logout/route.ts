@@ -1,13 +1,16 @@
-import { NextResponse } from "next/server";
-import { SESSION_COOKIE_OPTIONS } from "@/lib/auth/session";
+import { NextRequest, NextResponse } from "next/server";
+import { getSessionCookieOptions } from "@/lib/auth/session";
+import { getAppBaseUrl } from "@/lib/auth/url-helpers";
 
-export async function GET() {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+export async function GET(req: NextRequest) {
+  const appUrl = getAppBaseUrl(req);
+  const cookieOptions = getSessionCookieOptions(req);
   const response = NextResponse.redirect(new URL("/", appUrl));
-  response.cookies.set(SESSION_COOKIE_OPTIONS.name, "", {
-    ...SESSION_COOKIE_OPTIONS,
+  response.cookies.set(cookieOptions.name, "", {
+    ...cookieOptions,
     maxAge: 0,
   });
   return response;
 }
+
 

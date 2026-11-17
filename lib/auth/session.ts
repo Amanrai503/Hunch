@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { isSecureConnection } from "./url-helpers";
 
 const COOKIE_NAME = "hunch_session";
 const SECRET = new TextEncoder().encode(
@@ -39,12 +40,29 @@ export async function getSession(): Promise<SessionPayload | null> {
   return verifySessionToken(token);
 }
 
+export function getSessionCookieOptions(reqOrIsSecure?: Request | boolean) {
+  const isSecure =
+    typeof reqOrIsSecure === "boolean"
+      ? reqOrIsSecure
+      : isSecureConnection(reqOrIsSecure);
+
+  return {
+    name: COOKIE_NAME,
+    httpOnly: true,
+    secure: isSecure,
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  };
+}
+
 export const SESSION_COOKIE_OPTIONS = {
   name: COOKIE_NAME,
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: false, // Default false to prevent browser dropping cookies over plain HTTP (e.g. EC2 IP:3000)
   sameSite: "lax" as const,
   path: "/",
   maxAge: 30 * 24 * 60 * 60, // 30 days
 };
+
 

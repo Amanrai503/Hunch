@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { formatPlaytime } from "@/lib/utils";
 import { SAMPLE_GAMES } from "@/lib/sample-data/sample-games";
@@ -13,60 +13,103 @@ import {
   ShieldCheck,
   Plus,
   X,
+  Loader2,
 } from "lucide-react";
+
+interface LibraryGameItem {
+  id?: string;
+  steamAppId: number;
+  name: string;
+  headerImage?: string;
+  capsuleImage?: string;
+  playtimeForeverMinutes: number;
+  lastPlayedText: string;
+  inBacklog: boolean;
+  tags?: { tag: string; weight: number }[];
+  estimatedHoursToBeat?: number | string | null;
+  steamReviewScore?: number | null;
+  steamDeckCompatibility?: string;
+}
+
+const INITIAL_FALLBACK_GAMES: LibraryGameItem[] = [
+  {
+    ...SAMPLE_GAMES[0],
+    playtimeForeverMinutes: 5700,
+    lastPlayedText: "Yesterday",
+    inBacklog: false,
+  },
+  {
+    ...SAMPLE_GAMES[1],
+    playtimeForeverMinutes: 8700,
+    lastPlayedText: "3 days ago",
+    inBacklog: false,
+  },
+  {
+    ...SAMPLE_GAMES[7],
+    playtimeForeverMinutes: 2520,
+    lastPlayedText: "Last week",
+    inBacklog: false,
+  },
+  {
+    ...SAMPLE_GAMES[6],
+    playtimeForeverMinutes: 1080,
+    lastPlayedText: "2 weeks ago",
+    inBacklog: true,
+  },
+  {
+    ...SAMPLE_GAMES[2],
+    playtimeForeverMinutes: 2100,
+    lastPlayedText: "Last month",
+    inBacklog: false,
+  },
+  {
+    ...SAMPLE_GAMES[4],
+    playtimeForeverMinutes: 150,
+    lastPlayedText: "3 months ago",
+    inBacklog: true,
+  },
+  {
+    ...SAMPLE_GAMES[9],
+    playtimeForeverMinutes: 1320,
+    lastPlayedText: "2 months ago",
+    inBacklog: false,
+  },
+];
 
 export default function MyGamesPage() {
   const [activeTab, setActiveTab] = useState<"library" | "backlog" | "lists">("library");
+  const [libraryGames, setLibraryGames] = useState<LibraryGameItem[]>(INITIAL_FALLBACK_GAMES);
+  const [loadingLibrary, setLoadingLibrary] = useState(true);
 
-  // Sample library items mapped to fixtures
-  const libraryGames = [
-    {
-      ...SAMPLE_GAMES[0], // Balatro
-      playtimeForeverMinutes: 5700, // 95h
-      lastPlayedText: "Yesterday",
-      inBacklog: false,
-    },
-    {
-      ...SAMPLE_GAMES[1], // Slay the Spire
-      playtimeForeverMinutes: 8700, // 145h
-      lastPlayedText: "3 days ago",
-      inBacklog: false,
-    },
-    {
-      ...SAMPLE_GAMES[7], // Monster Train
-      playtimeForeverMinutes: 2520, // 42h
-      lastPlayedText: "Last week",
-      inBacklog: false,
-    },
-    {
-      ...SAMPLE_GAMES[6], // Inscryption
-      playtimeForeverMinutes: 1080, // 18h
-      lastPlayedText: "2 weeks ago",
-      inBacklog: true,
-    },
-    {
-      ...SAMPLE_GAMES[2], // Hades
-      playtimeForeverMinutes: 2100, // 35h
-      lastPlayedText: "Last month",
-      inBacklog: false,
-    },
-    {
-      ...SAMPLE_GAMES[4], // Elden Ring
-      playtimeForeverMinutes: 150, // 2.5h (backlog!)
-      lastPlayedText: "3 months ago",
-      inBacklog: true,
-    },
-    {
-      ...SAMPLE_GAMES[9], // Dead Cells
-      playtimeForeverMinutes: 1320, // 22h
-      lastPlayedText: "2 months ago",
-      inBacklog: false,
-    },
-  ];
+  useEffect(() => {
+    let ignore = false;
+    async function fetchLibrary() {
+      try {
+        const res = await fetch("/api/library");
+        if (res.ok) {
+          const data = await res.json();
+          if (!ignore && data.games && data.games.length > 0) {
+            setLibraryGames(data.games);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load library games:", err);
+      } finally {
+        if (!ignore) {
+          setLoadingLibrary(false);
+        }
+      }
+    }
+    fetchLibrary();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const backlogGames = libraryGames.filter(
     (g) => g.inBacklog || g.playtimeForeverMinutes < 300
   );
+
 
   const [customLists, setCustomLists] = useState([
     {
@@ -206,13 +249,19 @@ export default function MyGamesPage() {
       </div>
 
       {/* Tab Content: Library */}
-      {activeTab === "library" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {libraryGames.map((g) => (
-            <div
-              key={g.steamAppId}
-              className="rounded-xl border border-line bg-surface p-4 flex flex-col justify-between space-y-3 shadow-2xs"
-            >
+      {activeTab === "library" &&
+        (loadingLibrary ? (
+          <div className="py-20 text-center flex flex-col items-center justify-center space-y-3">
+            <Loader2 className="h-6 w-6 animate-spin text-accent" />
+            <p className="text-xs text-muted">Syncing and loading your Steam library...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {libraryGames.map((g) => (
+              <div
+                key={g.steamAppId}
+                className="rounded-xl border border-line bg-surface p-4 flex flex-col justify-between space-y-3 shadow-2xs"
+              >
               <div className="flex gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -250,7 +299,9 @@ export default function MyGamesPage() {
 
               <div className="pt-2 border-t border-line/60 flex items-center justify-between text-xs">
                 <span className="text-[11px] text-muted">
-                  {g.tags.slice(0, 2).map((t) => t.tag).join(" • ")}
+                  {g.tags && g.tags.length > 0
+                    ? g.tags.slice(0, 2).map((t) => t.tag).join(" • ")
+                    : "Steam Game"}
                 </span>
                 <a
                   href={`https://store.steampowered.com/app/${g.steamAppId}`}
@@ -265,7 +316,7 @@ export default function MyGamesPage() {
             </div>
           ))}
         </div>
-      )}
+      ))}
 
       {/* Tab Content: Backlog */}
       {activeTab === "backlog" && (
@@ -307,9 +358,15 @@ export default function MyGamesPage() {
                       {g.name}
                     </Link>
                     <div className="text-[11px] text-muted space-y-0.5 mt-1">
-                      <span className="inline-block bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-xs">
-                        ~{g.estimatedHoursToBeat}h to beat
-                      </span>
+                      {g.estimatedHoursToBeat ? (
+                        <span className="inline-block bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-xs">
+                          ~{g.estimatedHoursToBeat}h to beat
+                        </span>
+                      ) : (
+                        <span className="inline-block bg-accent/10 text-accent text-[10px] font-bold px-2 py-0.5 rounded-xs">
+                          Backlog
+                        </span>
+                      )}
                       <p className="mt-1">
                         Current: {formatPlaytime(g.playtimeForeverMinutes)} played
                       </p>
@@ -319,7 +376,7 @@ export default function MyGamesPage() {
 
                 <div className="pt-2 border-t border-line/60 flex items-center justify-between text-xs">
                   <span className="text-[11px] text-muted">
-                    {g.steamReviewScore}% Positive
+                    {g.steamReviewScore ? `${g.steamReviewScore}% Positive` : "In Library"}
                   </span>
                   <Link
                     href={`/games/${g.steamAppId}`}
@@ -333,6 +390,7 @@ export default function MyGamesPage() {
           </div>
         </div>
       )}
+
 
       {/* Tab Content: Custom Lists */}
       {activeTab === "lists" && (
