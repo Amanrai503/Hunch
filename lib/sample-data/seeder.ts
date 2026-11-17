@@ -1,38 +1,76 @@
 import { db } from "@/drizzle/db";
 import { users, games, gameTags, libraryItems } from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
 import { SAMPLE_USER } from "./sample-user";
 import { SAMPLE_GAMES } from "./sample-games";
 
 export async function seedDatabase() {
   console.log("🌱 Starting Hunch database seeding...");
 
-  // 1. Upsert Sample User
+  // 1. Resilient Sample User Upsert
   console.log("👤 Upserting sample user:", SAMPLE_USER.displayName);
-  const [user] = await db
-    .insert(users)
-    .values({
-      id: SAMPLE_USER.id,
-      steamId: SAMPLE_USER.steamId,
-      displayName: SAMPLE_USER.displayName,
-      avatarUrl: SAMPLE_USER.avatarUrl,
-      profileUrl: SAMPLE_USER.profileUrl,
-      isPrivate: false,
-      isSampleUser: true,
-      tasteProfileJson: SAMPLE_USER.tasteProfileJson,
-      lastSyncedAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: users.steamId,
-      set: {
-        displayName: SAMPLE_USER.displayName,
-        avatarUrl: SAMPLE_USER.avatarUrl,
-        tasteProfileJson: SAMPLE_USER.tasteProfileJson,
-        updatedAt: new Date(),
-      },
-    })
-    .returning();
+  let userId = SAMPLE_USER.id;
 
-  const userId = user.id;
+  try {
+    const existingBySteam = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.steamId, SAMPLE_USER.steamId))
+      .limit(1);
+
+    if (existingBySteam.length > 0) {
+      userId = existingBySteam[0].id;
+      await db
+        .update(users)
+        .set({
+          displayName: SAMPLE_USER.displayName,
+          avatarUrl: SAMPLE_USER.avatarUrl,
+          tasteProfileJson: SAMPLE_USER.tasteProfileJson,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
+    } else {
+      const existingById = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, SAMPLE_USER.id))
+        .limit(1);
+
+      if (existingById.length > 0) {
+        userId = existingById[0].id;
+        await db
+          .update(users)
+          .set({
+            steamId: SAMPLE_USER.steamId,
+            displayName: SAMPLE_USER.displayName,
+            avatarUrl: SAMPLE_USER.avatarUrl,
+            tasteProfileJson: SAMPLE_USER.tasteProfileJson,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, userId));
+      } else {
+        const [inserted] = await db
+          .insert(users)
+          .values({
+            id: SAMPLE_USER.id,
+            steamId: SAMPLE_USER.steamId,
+            displayName: SAMPLE_USER.displayName,
+            avatarUrl: SAMPLE_USER.avatarUrl,
+            profileUrl: SAMPLE_USER.profileUrl,
+            isPrivate: false,
+            isSampleUser: true,
+            tasteProfileJson: SAMPLE_USER.tasteProfileJson,
+            lastSyncedAt: new Date(),
+          })
+          .returning();
+        if (inserted) {
+          userId = inserted.id;
+        }
+      }
+    }
+  } catch (userErr) {
+    console.warn("User upsert fallback:", userErr);
+  }
 
   // 2. Upsert Sample Games & Tags
   console.log(`🎮 Seeding ${SAMPLE_GAMES.length} curated games with SteamSpy tags...`);
