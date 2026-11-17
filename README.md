@@ -1,7 +1,7 @@
 # Hunch 🎯
 
 > **Steam recommendations, explained.**  
-> Never buy another game you abandon after 90 minutes. Transparent picks calculated from your actual playtime, tags, and regret risk.
+> Never buy another game you abandon after 2 Hours. Transparent picks calculated from your actual playtime, tags, and regret risk.
 
 ---
 
