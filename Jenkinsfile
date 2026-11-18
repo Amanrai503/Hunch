@@ -8,9 +8,29 @@ pipeline {
   environment {
     APP_HOST = 'ubuntu@172.31.2.156'
     APP_DIR  = '/home/ubuntu/hunch'
+    TMPDIR   = '/var/lib/jenkins/trivy-tmp'
   }
 
   stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Trivy Scan') {
+      steps {
+        sh '''
+          trivy fs \
+            --scanners vuln,secret,misconfig \
+            --severity HIGH,CRITICAL \
+            --exit-code 0 \
+            --no-progress \
+            .
+        '''
+      }
+    }
+
     stage('Deploy') {
       steps {
         sshagent(credentials: ['app-server-ssh']) {
