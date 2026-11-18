@@ -1,211 +1,93 @@
 # Hunch 🎯
 
 > **Steam recommendations, explained.**  
-> Never buy another game you abandon after 2 Hours and more. Transparent picks calculated from your actual playtime, tags, and regret risk.
+> Never buy another game you abandon after two hours. Transparent, explainable game picks calculated from your real playtime habits, Steam community tags, and early drop-off regret risk.
+
+🌐 **Live Deployed App:** [http://13.233.137.0:3000/](http://13.233.137.0:3000/)
 
 ---
 
-## Tech Stack
+## What is Hunch?
 
-* **Framework:** Next.js (App Router) + TypeScript + React 19
-* **Styling:** Tailwind CSS v4 + Radix UI / custom editorial components (No dark mode)
-* **Typography:** `Bricolage Grotesque` (headings) & `DM Sans` (body) via `next/font`
-* **Design Tokens:**
-  * Background: `#F4EFE6`
-  * Surface: `#FBF8F2`
-  * Section: `#ECE5D7`
-  * Line: `#D8D0C0`
-  * Ink: `#1B1B1F`
-  * Muted: `#5C5A55`
-  * Accent: `#C8321A`
-* **Database & ORM:** PostgreSQL with `pgvector` extension via Drizzle ORM
-* **Background Jobs:** Inngest (throttled catalog enrichment ~200 req/5 min, library sync, daily cron)
-* **Realtime Multiplayer:** Supabase Realtime (collaborative Squad voting rooms)
-* **Auth:** Steam OpenID 2.0 (read-only 64-bit SteamID, nonce replay protection, `httpOnly` signed cookie session) + One-click Sample Profile Mode
-* **Ranking Engine:** Pure, decoupled mathematical module (Taste 0.40, Wilson Review 0.20, Inverted Regret 0.15, Time Fit 0.15, Price 0.10)
+Steam’s default storefront algorithm pushes games based on marketing hype, wishlist volume, and recent sales spikes — often leading gamers to purchase titles they abandon before reaching the 2-hour refund cutoff.
+
+**Hunch** is an algorithmic Steam recommendation engine and backlog organizer designed around transparency and buyer protection. Instead of relying on proprietary black-box algorithms, Hunch inspects your real Steam playtime, synthesizes an explainable multidimensional taste vector, and computes recommendations using five mathematically independent signals. Every card shows its exact match percentage, playtime fit, and a "Why this?" rationale drawer breaking down every factor.
 
 ---
 
-## Getting Started
+## Key Features
 
-### 1. Prerequisites
-* Node.js 20+
-* Docker & Docker Compose (for local PostgreSQL with `pgvector`)
+### 1. Algorithmic "For You" Feed (`/for-you`)
+* **Personalized Recommendations:** Candidate games ranked against your actual taste profile and playtime history.
+* **Auto-Library Exclusion:** Automatically excludes titles you already own in your Steam library.
+* **Quick Filters:** Instant toggle filters for **Steam Deck Verified**, **Under $20**, **< 25 Hours to Beat**, and **On Sale**.
+* **Feedback Loop:** Dismiss recommendations with "Not Interested", "Already Played", or "Hide", or rate games from 1 to 10 to continually tune future picks.
 
-### 2. Setup Environment Variables
-Copy `.env.example` to `.env.local`:
-```bash
-cp .env.example .env.local
-```
+### 2. Transparent "Why This?" Inspection
+* **Explainable Math:** Slide-out inspection drawer on every game card displaying the exact 5-factor scoring breakdown.
+* **Plain-English Rationale:** Automatically generates human-readable explanations (e.g., *"Matches 88% of your Roguelike Deckbuilder affinity with 95% Wilson review confidence"*).
+* **Wilson Score Confidence:** Displays the 95% lower bound statistical confidence score rather than a raw percentage that can be skewed by small sample sizes.
 
-| Variable | Description | Default / Example |
-| :--- | :--- | :--- |
-| `NEXT_PUBLIC_APP_URL` | Base URL of the application | `http://localhost:3000` |
-| `SESSION_SECRET` | 32+ char secret for JWT cookie encryption | `development_secret_must_be_at_least_32_bytes_long_hunch` |
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:password@localhost:5432/hunch` |
-| `STEAM_API_KEY` | Steam Web API Key ([Get one here](https://steamcommunity.com/dev/apikey)) | `your_key_here` |
-| `INNGEST_EVENT_KEY` | Inngest event key for background jobs | `local` |
-| `INNGEST_SIGNING_KEY` | Inngest signing key | `local` |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL (Squad rooms) | `https://your-project.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY`| Supabase Anonymous Public Key | `your-anon-key` |
+### 3. Playtime-Weighted Taste Synthesis
+* **Real Playtime Signal:** Weighs your played games by $\sqrt{\text{playtime}}$, ensuring your 100-hour favorites dominate your profile while short trial runs don't distort recommendations.
+* **128-Dimensional Vector Embeddings:** Deterministically projects sparse tag spaces into 128D unit vectors indexed with `pgvector` HNSW cosine similarity.
+* **Interactive Taste Calibration (`/start`):** Onboard or recalibrate at any time by selecting favorite game mechanics, setting target game lengths, and picking budget preferences.
 
-### 3. Start PostgreSQL with pgvector
-```bash
-docker compose up -d
-```
+### 4. Backlog & Library Organizer (`/my-games`)
+* **Live Steam Library:** Organizes your owned games with total playtime, recent 2-week activity, and last played dates.
+* **Backlog Assistant:** Automatically surfaces owned titles with less than 5 hours of playtime so you can rediscover unplayed gems.
+* **Custom Game Lists:** Create and manage thematic lists (e.g., *"Deck Travel Queue"*, *"Hardcore Roguelikes"*).
+* **Read-Only Guarantee:** Strictly read-only SteamID integration — Hunch will never write to or modify your Steam account.
 
-### 4. Install Dependencies & Run Development Server
-```bash
-npm install
-npm run dev
-```
+### 5. Multiplayer "Squad Decider" Rooms (`/squad`)
+* **Group Consensus Solver:** Solves the endless group-chat dilemma of *"what are we playing tonight?"* for squads of 2 to 8 players.
+* **Realtime Voting:** Powered by Supabase Realtime channels with live presence indicators and real-time voting cards (**Pick** `+1`, **Pass** `0`, **Veto** strike).
+* **The 1-Veto Rule:** Every player receives exactly one nuclear veto per session — backed by application logic and a PostgreSQL partial unique index (`uniqueIndex("squad_user_single_veto_idx")`).
+* **Live Consensus Scoreboard:** Realtime leaderboards instantly recalculate scores, eliminate vetoed titles, and crown group winners.
 
-Visit [http://localhost:3000](http://localhost:3000) in your browser.
+### 6. Sample Profile Mode (Zero-Friction Preview)
+* **Instant Exploration:** Test-drive the entire application with one click via **"Try Sample Profile"** — no Steam login or Steam API key required.
 
 ---
 
-## Docker & AWS EC2 Deployment 🐳
+## The 5-Factor Pure Ranking Engine
 
-### Option A: Complete Stack via Docker Compose (Recommended)
-Runs both the Next.js web application and PostgreSQL with `pgvector`, automatically mounts schema migrations into `/docker-entrypoint-initdb.d/`, and sets up container networking.
+Every recommendation score (0–100) is generated by a pure, deterministic mathematical engine combining five distinct signals:
 
-1. **Clone repository on your EC2 instance:**
-   ```bash
-   git clone <your-repo-url>
-   cd hunch
-   ```
-
-2. **Configure environment:**
-   ```bash
-   cp .env.example .env
-   # Set NEXT_PUBLIC_APP_URL to your EC2 public IP or domain:
-   # NEXT_PUBLIC_APP_URL=http://<YOUR_EC2_PUBLIC_IP>:3000
-   ```
-
-3. **Build and start containers:**
-   ```bash
-   docker compose up -d --build
-   ```
-
-4. **Seed database with 50+ curated games & SteamSpy metadata:**
-   ```bash
-   curl http://localhost:3000/api/seed
-   ```
-
-5. **AWS EC2 Security Group:**
-   Ensure Inbound Rules allow **Custom TCP Port 3000** (or port 80 if reverse-proxied with Nginx) from your IP or `0.0.0.0/0`.
-   Open `http://<YOUR_EC2_PUBLIC_IP>:3000` in your browser.
+| Factor | Weight | Method | Purpose |
+| :--- | :---: | :--- | :--- |
+| **Taste Match** | **40%** | Sparse cosine similarity $\frac{A \cdot B}{\|A\|\|B\|}$ | Matches candidate tags against your playtime-weighted tag preferences. |
+| **Review Quality** | **20%** | Wilson score 95% confidence lower bound | Measures authentic quality while heavily penalizing small sample sizes (e.g., 5/5 vs. 9,500/10,000). |
+| **Inverted Regret Risk** | **15%** | Exponential penalty on early drop-offs (<2h) & sentiment volatility | Protects you from games with high refund/abandonment rates. |
+| **Time Fit** | **15%** | Gaussian distribution centered on your preferred playtime | Ensures games match your available bandwidth (e.g. 15h story vs. 100h grind). |
+| **Price & Sale Value** | **10%** | Discount depth & price-per-hour efficiency ratio | Rewards steep discounts and budget-friendly pricing models. |
 
 ---
 
-### Option B: Standalone Docker Run
-If connecting to an external database (e.g., AWS RDS PostgreSQL with `pgvector` or Supabase):
+## Tech Stack & Architecture
 
-1. **Build image:**
-   ```bash
-   docker build -t hunch .
-   ```
-
-2. **Run container:**
-   ```bash
-   docker run -d \
-     -p 3000:3000 \
-     --name hunch \
-     --restart always \
-     -e DATABASE_URL="postgresql://user:password@your-db-host:5432/hunch" \
-     -e SESSION_SECRET="development_secret_must_be_at_least_32_bytes_long_hunch" \
-     -e NEXT_PUBLIC_APP_URL="http://<YOUR_EC2_PUBLIC_IP>:3000" \
-     hunch
-   ```
+* **Frontend & Fullstack Framework:** Next.js (App Router, Standalone Output) + React 19 + TypeScript
+* **Styling & Design System:** Tailwind CSS v4 + Radix UI editorial design system (curated light newspaper aesthetic)
+* **Database & Vector Search:** PostgreSQL 16 + `pgvector` extension (HNSW indexing) via Drizzle ORM
+* **External APIs & Metadata:**
+  * Steam OpenID 2.0 (read-only cryptographic authentication with clock-drift tolerance)
+  * Steam Web API (`IPlayerService/GetOwnedGames`)
+  * Steam Storefront API (pricing, Steam Deck compatibility, media assets)
+  * SteamSpy API (community tag distributions, owner estimates, median playtimes)
+* **Realtime Collaboration:** Supabase Realtime WebSockets for Squad decider voting rooms
+* **Background Ingestion & Cron:** Inngest event pipelines for automated catalog enrichment and library resyncs
+* **DevOps & Infrastructure:**
+  * Automated CI/CD via Jenkins & GitHub Webhooks
+  * Multi-container deployment with Docker Compose (`web` + `postgres/pgvector`)
+  * Hosted on AWS EC2 (Ubuntu)
 
 ---
 
-## Jenkins CI/CD Pipeline & GitHub Webhook 🚀
+## Live Deployment
 
-This repository includes a production-ready declarative [`Jenkinsfile`](./Jenkinsfile) that automates linting, testing, Docker image building, zero-downtime container updating, and post-deploy health checks whenever code is pushed to GitHub.
+The application is deployed and running live:
 
-### 1. GitHub Webhook Setup
-1. Go to your GitHub repository -> **Settings** -> **Webhooks** -> **Add webhook**.
-2. **Payload URL:** `http://<YOUR_JENKINS_SERVER_IP>:8080/github-webhook/`
-3. **Content type:** `application/json`
-4. **Which events would you like to trigger this webhook?** Select **Just the push event**.
-5. Click **Add webhook**.
-
-### 2. Jenkins Job Configuration
-1. In Jenkins dashboard, click **New Item** -> Name it `hunch-pipeline` -> Select **Pipeline** -> Click **OK**.
-2. Under **Build Triggers**, check **GitHub hook trigger for GITScm polling**.
-3. Under **Pipeline**:
-   - **Definition:** Pipeline script from SCM
-   - **SCM:** Git
-   - **Repository URL:** `<your-github-repo-url>`
-   - **Branch Specifier:** `*/main`
-   - **Script Path:** `Jenkinsfile`
-4. Click **Save**.
-
-### 3. Pipeline Stages Executed on Every Push
-- **Checkout:** Pulls the latest commit.
-- **Test & Lint:** Runs `npm ci`, ESLint, and the 12 ranking algorithm unit tests.
-- **Build Docker Image:** Builds the Next.js standalone container tagged with the Jenkins build number (`hunch-web:<build_number>` and `hunch-web:latest`).
-- **Deploy & Update Service:** Gracefully updates the running container using `docker compose up -d --build --no-deps web`.
-- **Health Check:** Polls `http://localhost:3000` until HTTP 200 is verified.
-- **Cleanup:** Automatically prunes unused dangling Docker images.
-
----
-
-## Sample Profile Mode (Zero Setup Required)
-
-Hunch includes a built-in **Sample Profile Mode**. Click **"Try Sample Profile"** in the top navigation or on the homepage to instantly explore the app with pre-seeded games, tags, and a calibrated taste vector without requiring a Steam account or Steam API key.
-
----
-
-## 5-Factor Pure Ranking Engine
-
-Hunch computes a 0–100 composite score from five pure mathematical factors:
-1. **Taste Match (40%):** Sparse tag-weighted cosine similarity against actual library playtime.
-2. **Review Quality (20%):** 95% Wilson score confidence lower bound.
-3. **Inverted Regret Risk (15%):** Penalizes games with high early drop-off (&lt;2 hours) and review sentiment volatility.
-4. **Time Fit (15%):** Gaussian distribution matching user bandwidth against median hours to beat.
-5. **Price & Sale Value (10%):** Active discount depth and price-per-hour ratio.
-
----
-
-## Project Roadmap
-
-* [x] **Phase 1: Foundation & Editorial Design System**
-  * Scaffold light editorial theme, tokens, and typography
-  * OpenID 2.0 auth with nonce verification & sample profile mode
-  * Shared header, footer with Valve disclaimer, and core page states
-* [x] **Phase 2: SteamSpy & Ingestion Pipeline**
-  * SteamSpy client (`lib/steam/steamspy.ts`) for tags, owner counts, and median playtime
-  * Rate-limited Steam Storefront API client (`lib/steam/store-api.ts`) with backoff (~200 req / 5 min)
-  * Steam Web API library sync (`lib/steam/client.ts`) for user owned games & playtimes
-  * Inngest functions: `seed-catalog` (2–5k games enrichment), `sync-steam-library`, `daily-resync-cron`
-  * Curated 50+ rich game fixtures (`lib/sample-data/sample-games.ts`) & database seeder (`lib/sample-data/seeder.ts`)
-* [x] **Phase 3: Onboarding, Pure Ranking Engine & Taste Profile**
-  * Interactive onboarding questionnaire at `/start` (mechanics, hours target, budget)
-  * Pure ranking engine in `lib/ranking/`: Taste (0.40), Wilson review lower bound (0.20), Inverted regret risk (0.15), Time fit (0.15), Price/sale (0.10)
-  * Explainable score breakdown & "Why this?" rationale generator (`lib/ranking/explainer.ts`)
-  * Sparse tag-weight vector synthesis, L2 normalization, and 128D projection for pgvector (`lib/ranking/taste-vector.ts`)
-  * Unit test suite with 12/12 passing tests (`npm test`) across Wilson formula, pure ranking, and vectors
-* [x] **Phase 4: Core Recommendation Experience**
-  * Algorithmic recommendation feed at `/for-you` with quick filters (Deck verified, Under $20, Under 25h, Sales)
-  * Exploratory catalog at `/discover` with multi-facet searching, genre carousels, and multi-mode sorting
-  * Recommendation card component with match %, review badges, and playtime estimates
-  * Slide-out "Why This?" drawer with 5-factor breakdown bars, Wilson metrics, and plain-English reasons
-  * Complete feedback loop (`/api/feedback` & `/api/ratings`): Not Interested, Already Played, Hide, and 1–10 rating dialog with DB check constraint
-  * Game detail page at `/games/[appId]` with SteamSpy community tags, regret risk analysis, and store links
-* [x] **Phase 5: My Games, Squad Decider Rooms, Profile & Settings**
-  * **My Games (`/my-games`):** Steam library browser, backlog organizer (&lt;5 hours filter), and custom list creator with zero-write-to-Steam guarantee.
-  * **Squad Decider Lobby (`/squad`):** Create session rooms with custom filters or join existing sessions via 6-digit room code (`SQ-XXXX`).
-  * **Realtime Collaborative Room (`/squad/[code]`):**
-    * Supabase Realtime channel integration with live member presence and avatar dots.
-    * Realtime broadcast voting deck (`Pick` +1, `Pass` 0, `Veto` strike).
-    * **The 1-Veto Rule:** Strict enforcement of max 1 veto per user per squad session backed by application logic and PostgreSQL partial unique index `uniqueIndex("squad_user_single_veto_idx").on(table.squadId, table.userId).where(sql`vote = 'veto'`)`.
-    * Live Consensus Scoreboard: real-time ranked consensus leaderboards with instant elimination of vetoed games and winner crowning.
-    * Built-in peer simulation for immediate solo testing.
-  * **Gamer Profile (`/profile`):** Taste vector affinity bars (Roguelike, Strategy, RPG, Indie), playtime statistics, backlog metrics, and gamer achievement badges.
-  * **Settings (`/settings`):** Session management, manual Steam library resync trigger, taste calibration reset, local data wipe, and Valve compliance notes.
-  * **100% Passing Test Suite & Clean Turbopack Build:** 12/12 unit tests passing via `npm test`, 0 lint warnings/errors via `npm run lint`, all 24 routes cleanly compiled via `npm run build`.
+👉 **[http://13.233.137.0:3000/](http://13.233.137.0:3000/)**
 
 ---
 
